@@ -49,17 +49,13 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                             if let Some(path_str) = new_path.to_str() {
                                 let contents: String = fs::read_to_string(path_str)?;//.expect("File could not be read");
                                 for line in contents.lines() {
-                                    match line.get(..2) {
-                                        Some("- ") => { 
+                                    if line.starts_with("-") {
                                             if line.get(..4) != Some("- ~~") {
                                                 let components = path_str.rsplit("/").collect::<Vec<_>>();
                                                 let new_todo = Todo::new(String::from(components[1]), String::from(line));
                                                 todos.push(new_todo);
                                             }
-                                        },
-                                        Some(_) => {},
-                                        None => {} 
-                                    }
+                                        }
                                 }
 
 
