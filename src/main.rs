@@ -6,15 +6,30 @@ use std::io::Error;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+
+    /// Path your TODOs reside in
+    #[arg(short, long)]
+    path: String
+}
+
+#[command(version, about, long_about = None)]
 struct Args {
     /// Name of the person to find TODOs for 
     #[arg(short, long)]
     name: String,
 
-    /// Path your TODOs reside in
     #[arg(short, long)]
-    path: String
+    users: Vec<String>
 
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Creates a new project or category
+    New,
 }
 
 struct Todo {
@@ -69,16 +84,24 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
     Ok(todos)
 }
 
+fn create_directory(new_dir_path: Box<&Path>, users: Box<Vec<String>>) -> Result<(), Error> {
+    fs::create_dir(new_dir_path)?;
+    fs::write("list.md", "# Todos")?;
 
-fn main() {
-    let args = Args::parse();
-    let name_str = &args.name.to_string();
-    let path = Path::new(&args.path);
-    let path_str = path.to_str().expect("Path not a string");
+    // for each user provided, create a list
+    for user in users.iter() {
+        let file_name = user.push_str(".md");
+        fs::write(file_name, "# Todos")?;
+    }
+    
+    Ok()
+}
+
+fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
+
     let path_string = String::from(path_str);
     if !path_string.is_empty() {
         let mut file_name = String::from(name_str);
-
 
         file_name.push_str(".md");
 
@@ -115,6 +138,32 @@ fn main() {
         }
     }
 
+    Ok()
+
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    let args = Args::parse();
+
+    let path = Path::new(&cli.path);
+
+    let name_str = &args.name.to_string();
+    let path_str = path.to_str().expect("Path not a string");
+
+    // example of cli modes
+    match cli.command {
+        Command::New => {
+            // creates a new project
+            create_directory(&path, &args.users);
+
+        }
+        _ => {
+            print_lists(&path_str, &name_str);
+
+        }
+    }
 
 
 }
