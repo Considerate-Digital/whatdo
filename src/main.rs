@@ -88,12 +88,9 @@ fn main() {
             for item in list.iter() {
                 if !projects.contains_key(&item.dir_name) {
                     projects.insert(item.dir_name.clone(), Vec::with_capacity(6));
-                } else {
-                    if projects.contains_key(&item.dir_name) {
-                        if let Some(project_mut) = projects.get_mut(&item.dir_name) {
-                            project_mut.push(item.task.clone())
-                        }
-                    }
+                } 
+                if let Some(project_mut) = projects.get_mut(&item.dir_name) {
+                    project_mut.push(item.task.clone())
                 }
             }
 
