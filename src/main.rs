@@ -9,37 +9,34 @@ use std::io::Error;
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
-    
+}
+
+#[derive(Parser, Debug, Clone)]
+#[command(version, about, long_about = None)]
+struct SubCli {
     /// Path your TODOs reside in
     path: Option<String>,
 
     name: Option<String>,
-
+    
     users: Option<Vec<String>>,
-
 }
-
-//#[(version, about, long_about = None)]
-/*
-struct Args {
-    /// Name of the person to find TODOs for 
-    #[arg(short, long)]
-    name: String,
-
-    #[arg(short, long)]
-    users: Vec<String>
-
-}
-*/
 
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Creates a new project or category
     New {
-        #[arg(short, long)]
-        project: Option<String>,
+        project_name: Option<String>,
 
+        #[arg(short, long)]
+        path: Option<String>,
+
+        #[arg(short, long, value_delimiter=",")]
+        users: Option<Vec<String>>,
     },
+    List(SubCli),
+    
+
 }
 
 struct Todo {
@@ -82,51 +79,65 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                                             }
                                         }
                                 }
+                            }
 
 
+                        } else {
+                            if let Some(found_file_str) = new_path.to_str() {
+                                // if the file is a markdown file, then open it
+                                if found_file_str.ends_with(".md") {
+                                    // TODO: this is copied verbosely, so find a way to remove duplication
+                                    let contents: String = fs::read_to_string(found_file_str)?;
+                                    for line in contents.lines() {
+                                        if line.starts_with("-") {
+                                                if line.get(..4) != Some("- ~~") {
+                                                    let components = found_file_str.rsplit("/").collect::<Vec<_>>();
+                                                    let new_todo = Todo::new(String::from(components[1]), String::from(line));
+                                                    todos.push(new_todo);
+                                                }
+                                            }
+                                    }
+
+                                }
                             }
                         }
                     }
-                } else if let Some(found_file_str) = new_path.to_str() {
-                    // if the file is a markdown file, then open it
-                    if found_file_str.ends_with(".md") {
-                        // TODO: this is copied verbosely, so find a way to remove duplication
-                        let contents: String = fs::read_to_string(found_file_str)?;
-                        for line in contents.lines() {
-                            if line.starts_with("-") {
-                                    if line.get(..4) != Some("- ~~") {
-                                        let components = found_file_str.rsplit("/").collect::<Vec<_>>();
-                                        let new_todo = Todo::new(String::from(components[1]), String::from(line));
-                                        todos.push(new_todo);
-                                    }
-                                }
-                        }
-
-                    }
+                }
             }
         }
-    }
     }
     Ok(todos)
 }
 
-fn create_directory(new_dir_path: Box<&Path>, users: Box<Vec<String>>) -> Result<(), Error> {
+fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Result<(), Error> {
+    println!("create directory called");
     // Creates a route to the absolute path
     let abs_path = PathBuf::from(*new_dir_path);
+    println!("{}",abs_path.display());
+
+    /*
+    println!("calling canonicalize");
     let abs_path_can = fs::canonicalize(&abs_path)?;
+    println!("{}", abs_path_can.display());
+    */
     // Create a directory at the specified path
-    fs::create_dir(abs_path_can)?;
+    fs::create_dir(&abs_path)?;
     // Creates the path for the main list
     let mut main_list_path = PathBuf::from(&abs_path);
-    main_list_path.push("list.md");
+    main_list_path.push("general.md");
+    /*
     let main_list_path_can = fs::canonicalize(&main_list_path)?;
-    fs::write(main_list_path_can, "# Todos")?;
+    */
+    fs::write(&main_list_path, "# Todos")?;
 
     // for each user provided, create a list
     for user in users.iter() {
+        // make the string lowercase
+        let user = user.to_lowercase();
         let user = user.as_str();
         let file_name = String::from(user);
         let mut file_path_buf = PathBuf::from(&abs_path);
+        file_path_buf.push("/");
         file_path_buf.push(&file_name);
         file_path_buf.push(".md");
         fs::write(file_path_buf, "# Todos")?;
@@ -136,10 +147,7 @@ fn create_directory(new_dir_path: Box<&Path>, users: Box<Vec<String>>) -> Result
 }
 
 fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
-     
-    //let path_string = String::from(*path_str);
     let path = Path::new(*path_str);
-    println!("{}", path.display());
     let mut file_name = String::from(*name_str);
 
     file_name.push_str(".md");
@@ -150,11 +158,9 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
         for item in list.iter() {
             if !projects.contains_key(&item.dir_name) {
                 projects.insert(item.dir_name.clone(), Vec::with_capacity(6));
-            } else {
-                if projects.contains_key(&item.dir_name) {
-                    if let Some(project_mut) = projects.get_mut(&item.dir_name) {
-                        project_mut.push(item.task.clone())
-                    }
+            } else if projects.contains_key(&item.dir_name) {
+                if let Some(project_mut) = projects.get_mut(&item.dir_name) {
+                    project_mut.push(item.task.clone())
                 }
             }
         }
@@ -180,32 +186,72 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
 
 }
 
+fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
+    if let Some(path) = &cli.path {
+        let path = Path::new(&path);
+        let path_str = path.to_str().expect("Path not a string");
+        if let Some(name_str) = &cli.name {
+            let name_str = name_str.as_str();
+            print_lists(Box::new(path_str), Box::new(name_str));
+            Ok(())
+        } else if path_str != "" {
+            print_lists(Box::new(path_str), Box::new(""));
+            Ok(())
+        } else {
+            print_lists(Box::new("./"), Box::new(""));
+            Ok(())
+        }
+    } else {
+        print_lists(Box::new("./"), Box::new(""));
+        Ok(())
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
     
     //let args = Args::parse();
        // example of cli modes
     match &cli.command {
-        Some(Commands::New { project }) => {
+        Some(Commands::New { project_name, path, users }) => {
             // creates a new project
             //create_directory(&path, &args.users);
-            
+            // make the new path name from the project name and args
+            if let Some(project_name) = &project_name {
+                if let Some(new_path) = &path {
+                    println!("path found");
+                    let mut path = String::from("./");
+
+                    path.push_str(&new_path);
+                    path.push_str("/");
+                    path.push_str(&project_name);
+                    let path = Path::new(&path);
+                    
+                    if let Some(users) = &users {
+                        create_directory(Box::new(&path), Box::new(users.to_vec()));
+                    } else {
+                        create_directory(Box::new(&path), Box::new(Vec::new()));
+                    }
+                } else {
+                    println!("no path found");
+                    let mut path = String::from("./");
+                    path.push_str(&project_name);
+                    let path = Path::new(&path);
+                    println!("{}", path.display());
+                    if let Some(users) = &users {
+                        create_directory(Box::new(&path), Box::new(users.to_vec()));
+                    } else {
+                        create_directory(Box::new(&path), Box::new(Vec::new()));
+                    }
+                }
+            }
 
         }
+        Some(Commands::List(args)) => {
+            print_sorter(Box::new(&args));    
+        }
         None => {
-            if let Some(path) = cli.path {
-                let path = Path::new(&path);
-                let path_str = path.to_str().expect("Path not a string");
-                if let Some(name_str) = cli.name {
-                    let name_str = name_str.as_str();
-                    print_lists(Box::new(path_str), Box::new(name_str));
-                } else {
-                    print_lists(Box::new("./"), Box::new(""));
-                }
-
-            } else {
-                print_lists(Box::new("./"), Box::new(""));
-            }
+            //print_sorter(Box::new());    
 
         }
     }
