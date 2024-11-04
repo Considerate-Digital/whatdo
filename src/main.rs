@@ -31,12 +31,10 @@ enum Commands {
         #[arg(short, long)]
         path: Option<String>,
 
-        #[arg(short, long, value_delimiter=",")]
+        #[arg(short, long, value_delimiter=',')]
         users: Option<Vec<String>>,
     },
     List(SubCli),
-    
-
 }
 
 struct Todo {
@@ -68,6 +66,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                 if let Some(new_file_name) = new_path.file_name() {
                     if let Some(new_file_name_str) = new_file_name.to_str() {
                         if &*file_name.as_str() == new_file_name_str {
+                            println!("{}", new_file_name_str);
                             if let Some(path_str) = new_path.to_str() {
                                 let contents: String = fs::read_to_string(path_str)?;
                                 for line in contents.lines() {
@@ -80,9 +79,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                                         }
                                 }
                             }
-
-
-                        } else {
+                        } else if &*file_name.as_str() == " " {
                             if let Some(found_file_str) = new_path.to_str() {
                                 // if the file is a markdown file, then open it
                                 if found_file_str.ends_with(".md") {
@@ -111,6 +108,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
 
 fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Result<(), Error> {
     println!("create directory called");
+    println!("{:?}", users);
     // Creates a route to the absolute path
     let abs_path = PathBuf::from(*new_dir_path);
     println!("{}",abs_path.display());
@@ -125,22 +123,22 @@ fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Re
     // Creates the path for the main list
     let mut main_list_path = PathBuf::from(&abs_path);
     main_list_path.push("general.md");
-    /*
-    let main_list_path_can = fs::canonicalize(&main_list_path)?;
-    */
-    fs::write(&main_list_path, "# Todos")?;
 
+    fs::write(&main_list_path, "# Todos \n - Example Todo")?;
+    
     // for each user provided, create a list
     for user in users.iter() {
         // make the string lowercase
         let user = user.to_lowercase();
         let user = user.as_str();
-        let file_name = String::from(user);
-        let mut file_path_buf = PathBuf::from(&abs_path);
-        file_path_buf.push("/");
+        let mut file_name = String::from(user);
+        //file_name.push_str(".md");
+        let mut file_path_buf = PathBuf::new();
+        file_path_buf.push(&abs_path);
         file_path_buf.push(&file_name);
-        file_path_buf.push(".md");
-        fs::write(file_path_buf, "# Todos")?;
+        file_path_buf.set_extension("md");
+
+        fs::write(file_path_buf, "# Todos \n - Example Todo")?;
     }
     
     Ok(())
