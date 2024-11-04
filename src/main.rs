@@ -14,17 +14,19 @@ struct Cli {
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
 struct SubCli {
-    /// Path your TODOs reside in
-    path: Option<String>,
-
     name: Option<String>,
     
+    /// Path your TODOs reside in
+    #[arg(short, long,)]
+    path: Option<String>,
+
+    #[arg(short, long, value_delimiter=',')]
     users: Option<Vec<String>>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Creates a new project or category
+    /// This command creates a new project or category
     New {
         project_name: Option<String>,
 
@@ -59,14 +61,13 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
             let new_path = entry.path();
             if new_path.is_dir() {
                 // enter the dir and do the same 
-                let mut more_todos = search_directory(Box::new(new_path.as_path()), file_name.clone())?;//.expect("Inner directory error");
+                let mut more_todos = search_directory(Box::new(new_path.as_path()), file_name.clone())?;
                 todos.append(&mut more_todos);
             } else {
                 // if the file names match
                 if let Some(new_file_name) = new_path.file_name() {
                     if let Some(new_file_name_str) = new_file_name.to_str() {
                         if &*file_name.as_str() == new_file_name_str {
-                            println!("{}", new_file_name_str);
                             if let Some(path_str) = new_path.to_str() {
                                 let contents: String = fs::read_to_string(path_str)?;
                                 for line in contents.lines() {
@@ -79,7 +80,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                                         }
                                 }
                             }
-                        } else if &*file_name.as_str() == " " {
+                        } else if &*file_name.as_str() == ".md" {
                             if let Some(found_file_str) = new_path.to_str() {
                                 // if the file is a markdown file, then open it
                                 if found_file_str.ends_with(".md") {
@@ -92,7 +93,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                                                     let new_todo = Todo::new(String::from(components[1]), String::from(line));
                                                     todos.push(new_todo);
                                                 }
-                                            }
+                                          }
                                     }
 
                                 }
@@ -106,20 +107,13 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
     Ok(todos)
 }
 
-fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Result<(), Error> {
-    println!("create directory called");
-    println!("{:?}", users);
+fn create_directory(new_dir_path: Box<&Path>, users: Box<Vec<String>>) -> Result<(), Error> {
     // Creates a route to the absolute path
     let abs_path = PathBuf::from(*new_dir_path);
-    println!("{}",abs_path.display());
 
-    /*
-    println!("calling canonicalize");
-    let abs_path_can = fs::canonicalize(&abs_path)?;
-    println!("{}", abs_path_can.display());
-    */
     // Create a directory at the specified path
     fs::create_dir(&abs_path)?;
+
     // Creates the path for the main list
     let mut main_list_path = PathBuf::from(&abs_path);
     main_list_path.push("general.md");
@@ -131,8 +125,7 @@ fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Re
         // make the string lowercase
         let user = user.to_lowercase();
         let user = user.as_str();
-        let mut file_name = String::from(user);
-        //file_name.push_str(".md");
+        let file_name = String::from(user);
         let mut file_path_buf = PathBuf::new();
         file_path_buf.push(&abs_path);
         file_path_buf.push(&file_name);
@@ -140,14 +133,14 @@ fn create_directory(new_dir_path: Box<&Path>, mut users: Box<Vec<String>>) -> Re
 
         fs::write(file_path_buf, "# Todos \n - Example Todo")?;
     }
-    
     Ok(())
 }
 
 fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
     let path = Path::new(*path_str);
     let mut file_name = String::from(*name_str);
-
+    
+    // give the file name the correct extension
     file_name.push_str(".md");
 
     if let Ok(list) = search_directory(Box::new(path), Box::new(&file_name)) {
@@ -164,6 +157,7 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
         }
 
         println!("\n\n");
+
         for (key, val) in projects.iter() {
             println!("\n");
             let key = key.replace("_", " ");
@@ -173,15 +167,13 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
                 println!("{}", task);
             }
         }
-        println!("\n\n");
 
+        println!("\n\n");
 
     } else {
         println!("There was an error accessing the project files");
     }
-
     Ok(())
-
 }
 
 fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
@@ -190,17 +182,17 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
         let path_str = path.to_str().expect("Path not a string");
         if let Some(name_str) = &cli.name {
             let name_str = name_str.as_str();
-            print_lists(Box::new(path_str), Box::new(name_str));
+            print_lists(Box::new(path_str), Box::new(name_str))?;
             Ok(())
         } else if path_str != "" {
-            print_lists(Box::new(path_str), Box::new(""));
+            print_lists(Box::new(path_str), Box::new(""))?;
             Ok(())
         } else {
-            print_lists(Box::new("./"), Box::new(""));
+            print_lists(Box::new("./"), Box::new(""))?;
             Ok(())
         }
     } else {
-        print_lists(Box::new("./"), Box::new(""));
+        print_lists(Box::new("./"), Box::new(""))?;
         Ok(())
     }
 }
@@ -208,8 +200,7 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
 fn main() {
     let cli = Cli::parse();
     
-    //let args = Args::parse();
-       // example of cli modes
+    // example of cli modes
     match &cli.command {
         Some(Commands::New { project_name, path, users }) => {
             // creates a new project
@@ -226,33 +217,29 @@ fn main() {
                     let path = Path::new(&path);
                     
                     if let Some(users) = &users {
-                        create_directory(Box::new(&path), Box::new(users.to_vec()));
+                        let _ = create_directory(Box::new(&path), Box::new(users.to_vec()));
                     } else {
-                        create_directory(Box::new(&path), Box::new(Vec::new()));
+                        let _ = create_directory(Box::new(&path), Box::new(Vec::new()));
                     }
                 } else {
-                    println!("no path found");
                     let mut path = String::from("./");
                     path.push_str(&project_name);
                     let path = Path::new(&path);
-                    println!("{}", path.display());
                     if let Some(users) = &users {
-                        create_directory(Box::new(&path), Box::new(users.to_vec()));
+                        let _ = create_directory(Box::new(&path), Box::new(users.to_vec()));
                     } else {
-                        create_directory(Box::new(&path), Box::new(Vec::new()));
+                        let _ = create_directory(Box::new(&path), Box::new(Vec::new()));
                     }
                 }
             }
 
         }
         Some(Commands::List(args)) => {
-            print_sorter(Box::new(&args));    
+            let _ = print_sorter(Box::new(&args));    
         }
         None => {
             //print_sorter(Box::new());    
 
         }
     }
-
-
 }
