@@ -32,13 +32,8 @@ whatdo --help
 whatdo list --help
 ```
 
-## Why open source?
-We chose the **GNU Affero General Public License v3 (AGPLv3)** because we believe that measuring website carbon emissions is a utility that should be available to every website owner and operator. By opting for the AGPLv3, we have made sure that any future development and distribution of CarbonClicks will be available to everyone. The internet uses a huge amount of energy each year and CarbonClicks is a tool that can be used to aid developers and website owners to lower their digital emissions.
-
-We have provided [an overview](/AGPLv3_INFO.md) of the AGPLv3 license to roughly outline how it works. For more detail please read [the full license](/LICENSE).
-
 ## Contributing
-We welcome contributions from everyone, whether that's fixing some of the core code or a spelling mistake. If you're interested in making contributions to CarbonClicks then please read our "Code of Conduct" before you make any suggestions or send a pull request.
+We welcome contributions from everyone, whether that's fixing some of the core code or a spelling mistake. If you're interested in making contributions to this project then please read our "Code of Conduct" before you make any suggestions or send a pull request.
 
 To get started working on the codebase, follow our [development setup guide](/DEV_SETUP.md).
 
