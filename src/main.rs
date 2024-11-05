@@ -68,6 +68,8 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                 // if the file names match
                 if let Some(new_file_name) = new_path.file_name() {
                     if let Some(new_file_name_str) = new_file_name.to_str() {
+                        //println!("{}", file_name.as_str());
+                        //println!("{}", new_file_name_str);
                         if &*file_name.as_str() == new_file_name_str {
                             if let Some(path_str) = new_path.to_str() {
                                 let contents: String = fs::read_to_string(path_str)?;
@@ -80,7 +82,7 @@ fn search_directory(path: Box<&Path>, file_name: Box<&String>) -> Result<Vec<Tod
                                             }
                                         }
                                 }
-                            }
+                            } 
                         } else if &*file_name.as_str() == ".md" {
                             if let Some(found_file_str) = new_path.to_str() {
                                 // if the file is a markdown file, then open it
@@ -182,24 +184,23 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
 }
 
 fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
-    if let Some(path) = &cli.path {
-        let path = Path::new(&path);
-        let path_str = path.to_str().expect("Path not a string");
-        if let Some(name_str) = &cli.name {
-            let name_str = name_str.as_str();
+    if let Some(name_str) = &cli.name {
+        let name_str = name_str.as_str();
+        if let Some(path) = &cli.path {
+            let path = Path::new(&path);
+            let path_str = path.to_str().expect("Path not a string");
             print_lists(Box::new(path_str), Box::new(name_str))?;
-            Ok(())
-        } else if path_str != "" {
-            print_lists(Box::new(path_str), Box::new(""))?;
-            Ok(())
         } else {
-            print_lists(Box::new("./"), Box::new(""))?;
-            Ok(())
+            print_lists(Box::new("./"), Box::new(name_str))?;
         }
     } else {
-        print_lists(Box::new("./"), Box::new(""))?;
-        Ok(())
+        if let Some(path) = &cli.path {
+            let path = Path::new(&path);
+            let path_str = path.to_str().expect("Path not a string");
+            print_lists(Box::new(path_str), Box::new(""))?;
+        }
     }
+    Ok(())
 }
 
 fn main() {
