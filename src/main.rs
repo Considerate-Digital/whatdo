@@ -39,6 +39,7 @@ enum Commands {
     List(SubCli),
 }
 
+#[derive(Debug)]
 struct Todo {
     dir_name: String,
     task: String
@@ -149,6 +150,10 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
         for item in list.iter() {
             if !projects.contains_key(&item.dir_name) {
                 projects.insert(item.dir_name.clone(), Vec::with_capacity(6));
+                if let Some(project_mut) = projects.get_mut(&item.dir_name) {
+                    project_mut.push(item.task.clone())
+                }
+
             } else if projects.contains_key(&item.dir_name) {
                 if let Some(project_mut) = projects.get_mut(&item.dir_name) {
                     project_mut.push(item.task.clone())
