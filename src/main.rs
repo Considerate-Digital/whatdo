@@ -163,7 +163,7 @@ fn print_lists(path_str: Box<&str>, name_str: Box<&str>) -> Result<(), Error> {
             }
         }
 
-        println!("\n\n");
+        //println!("\n\n");
 
         for (key, val) in projects.iter() {
             println!("\n");
@@ -198,6 +198,8 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
             let path = Path::new(&path);
             let path_str = path.to_str().expect("Path not a string");
             print_lists(Box::new(path_str), Box::new(""))?;
+        } else {
+            print_lists(Box::new("./"), Box::new(""))?;
         }
     }
     Ok(())
