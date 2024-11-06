@@ -37,6 +37,18 @@ enum Commands {
         users: Option<Vec<String>>,
     },
     List(SubCli),
+    Add {
+        project_name: Option<String>,
+
+        #[arg(short, long)]
+        user: Option<String>,
+
+        #[arg(short, long)]
+        path: Option<String>,
+
+        
+        todo: Option<String>
+    }
 }
 
 #[derive(Debug)]
@@ -205,6 +217,45 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
     Ok(())
 }
 
+fn add_todo(todo: Box<String>, path: Box<&PathBuf>, user: Box<String>) -> Result<(), Error> {
+
+    // if the user exists, append the todo to that file 
+    // else append to the general list 
+}
+
+fn todo_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
+    if let Some(project_name) => &cli.project_name {
+        // if path
+        if let Some(path) => &cli.path {
+            // if users
+            let path = PathBuf::new(path);
+            path.push(project_name);
+            path.set_extension(".md");
+
+            if let Some(user) => &cli.user {
+                add_todo(Box::new(&cli.todo), Box::new(&path), Box::new(user))?;               
+            } else {
+                // project, path but no user
+            }
+        } else if Some(&cli.user) {
+            if let Some(user) => &cli.user {
+                // project name and user but no path
+            }
+        }
+    } else {
+        // make a general list if it does not already exist and add the todo
+        if let Some(path) => &cli.path {
+            // if path
+            let path = Path::new(path);
+
+        } else {
+
+            add_todo(Box::new(&cli.todo), Box::new(&path), Box::new(user))?;               
+        }
+    }
+    Ok(())
+}
+
 fn main() {
     let cli = Cli::parse();
     
@@ -242,6 +293,9 @@ fn main() {
         }
         Some(Commands::List(args)) => {
             let _ = print_sorter(Box::new(&args));    
+        }
+        Some(Commands::Add(args)) => {
+            let _ = todo_sorter(Box::new(&args));
         }
         None => {
             //print_sorter(Box::new());    
