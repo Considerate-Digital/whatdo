@@ -216,43 +216,57 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
     }
     Ok(())
 }
-
-fn add_todo(todo: Box<String>, path: Box<&PathBuf>, user: Box<String>) -> Result<(), Error> {
-
+/*
+fn add_todo(todo: Box<String>, path: Box<&PathBuf>) -> Result<(), Error> {
+    // open the directory
     // if the user exists, append the todo to that file 
-    // else append to the general list 
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(*path)?;
+    
+    let new_todo = String::from("- ");
+    new_todo.push_str(&todo);
+
+    if let Err(e) = writeln!(file, &new_todo) {
+        eprintln!("Could not write to file: {}", e)
+    }
 }
+*/
 
-fn todo_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
-    if let Some(project_name) => &cli.project_name {
+fn todo_sorter(project_name: Box<String>, user: Box<String>, path: Box<String>, todo: Box<String>) -> Result<(), Error> {
         // if path
-        if let Some(path) => &cli.path {
+        /*
+        if let Some(path) = &path {
             // if users
-            let path = PathBuf::new(path);
+            let path = PathBuf::from(path);
             path.push(project_name);
-            path.set_extension(".md");
 
-            if let Some(user) => &cli.user {
-                add_todo(Box::new(&cli.todo), Box::new(&path), Box::new(user))?;               
+            if let Some(user) = *&user {
+                path.push(user);
+                path.set_extension(".md");
+
+                add_todo(Box::new(&todo), Box::new(&path))?;               
+
             } else {
                 // project, path but no user
             }
-        } else if Some(&cli.user) {
-            if let Some(user) => &cli.user {
+        } else if Some(&user) {
+            if let Some(user) = &user {
                 // project name and user but no path
             }
         }
     } else {
         // make a general list if it does not already exist and add the todo
-        if let Some(path) => &cli.path {
+        if let Some(path) = &path {
             // if path
             let path = Path::new(path);
 
         } else {
 
-            add_todo(Box::new(&cli.todo), Box::new(&path), Box::new(user))?;               
+            add_todo(Box::new(&.todo), Box::new(&path))?;               
         }
-    }
+        */
     Ok(())
 }
 
@@ -294,8 +308,16 @@ fn main() {
         Some(Commands::List(args)) => {
             let _ = print_sorter(Box::new(&args));    
         }
-        Some(Commands::Add(args)) => {
-            let _ = todo_sorter(Box::new(&args));
+        Some(Commands::Add{project_name, user, path, todo}) => {
+            if let Some(project_name) = &project_name {
+                if let Some(todo) = &todo {
+                    if let Some(user) = &user {
+                        if let Some(path) = &path {
+                            let _ = todo_sorter(Box::new(&project_name), Box::new(&user), Box::new(&path), Box::new(&todo));
+                        }
+                    }
+                }
+            }
         }
         None => {
             //print_sorter(Box::new());    
