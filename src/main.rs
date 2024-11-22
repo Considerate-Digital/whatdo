@@ -239,7 +239,7 @@ fn add_todo(project_name: Box<&String>, user: Box<&String>, path: Box<&String>, 
         eprintln!("Could not write to file: {}", e)
     }
 
-    println!("Todo \"{}\" added to file: \"{:?}\"", &todo, &file);
+    println!("Todo \"{}\" added to file: {:?}", &todo, &path);
 
 
     Ok(())
