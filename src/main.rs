@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
 use std::path::{Path, PathBuf};
-use std::fs;
+use std::{fs, process};
 use std::collections::HashMap;
-use std::io::Error;
+use std::io::{Error, Write};
+
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -216,57 +217,31 @@ fn print_sorter(cli: Box<&SubCli>) -> Result<(), Error> {
     }
     Ok(())
 }
-/*
-fn add_todo(todo: Box<String>, path: Box<&PathBuf>) -> Result<(), Error> {
-    // open the directory
-    // if the user exists, append the todo to that file 
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(*path)?;
-    
-    let new_todo = String::from("- ");
-    new_todo.push_str(&todo);
 
-    if let Err(e) = writeln!(file, &new_todo) {
+
+fn add_todo(project_name: Box<&String>, user: Box<&String>, path: Box<&String>, todo: Box<&String>) -> Result<(), Error> {
+
+    let mut path = PathBuf::from(*path);
+    path.push(*project_name);
+
+    path.push(*user);
+    path.set_extension("md");
+
+    let mut file = fs::OpenOptions::new()
+            .write(true)
+        .append(true)
+        .open(&path)?;
+    
+    let mut new_todo = String::from("- ");
+    new_todo.push_str(&*&todo);
+
+    if let Err(e) = writeln!(file, "{}", &new_todo) {
         eprintln!("Could not write to file: {}", e)
     }
-}
-*/
 
-fn todo_sorter(project_name: Box<String>, user: Box<String>, path: Box<String>, todo: Box<String>) -> Result<(), Error> {
-        // if path
-        /*
-        if let Some(path) = &path {
-            // if users
-            let path = PathBuf::from(path);
-            path.push(project_name);
+    println!("Todo \"{}\" added to file: \"{:?}\"", &todo, &file);
 
-            if let Some(user) = *&user {
-                path.push(user);
-                path.set_extension(".md");
 
-                add_todo(Box::new(&todo), Box::new(&path))?;               
-
-            } else {
-                // project, path but no user
-            }
-        } else if Some(&user) {
-            if let Some(user) = &user {
-                // project name and user but no path
-            }
-        }
-    } else {
-        // make a general list if it does not already exist and add the todo
-        if let Some(path) = &path {
-            // if path
-            let path = Path::new(path);
-
-        } else {
-
-            add_todo(Box::new(&.todo), Box::new(&path))?;               
-        }
-        */
     Ok(())
 }
 
@@ -288,40 +263,83 @@ fn main() {
                     let path = Path::new(&path);
                     
                     if let Some(users) = &users {
-                        let _ = create_directory(Box::new(&path), Box::new(users.to_vec()));
+                        if let Err(e) = create_directory(Box::new(&path), Box::new(users.to_vec())) {
+                            eprintln!("New project could not be created: {}", e);
+                            process::exit(1);
+                        }
                     } else {
-                        let _ = create_directory(Box::new(&path), Box::new(Vec::new()));
+                        if let Err(e) = create_directory(Box::new(&path), Box::new(Vec::new())) {
+                            eprintln!("New project could not be created: {}", e);
+                            process::exit(1);
+                        }
                     }
                 } else {
                     let mut path = String::from("./");
                     path.push_str(&project_name);
                     let path = Path::new(&path);
                     if let Some(users) = &users {
-                        let _ = create_directory(Box::new(&path), Box::new(users.to_vec()));
+                        if let Err(e) = create_directory(Box::new(&path), Box::new(users.to_vec())) {
+                            eprintln!("New project could not be created: {}", e);
+                            process::exit(1);
+                        }
                     } else {
-                        let _ = create_directory(Box::new(&path), Box::new(Vec::new()));
+                        if let Err(e) = create_directory(Box::new(&path), Box::new(Vec::new())) {
+                            eprintln!("New project could not be created: {}", e);
+                            process::exit(1);
+                        }
                     }
                 }
             }
 
         }
         Some(Commands::List(args)) => {
-            let _ = print_sorter(Box::new(&args));    
+            if let Err(e) = print_sorter(Box::new(&args)) {
+                eprintln!("List could not be displayed: {}", e);
+                process::exit(1);
+            }
         }
         Some(Commands::Add{project_name, user, path, todo}) => {
+
             if let Some(project_name) = &project_name {
                 if let Some(todo) = &todo {
                     if let Some(user) = &user {
                         if let Some(path) = &path {
-                            let _ = todo_sorter(Box::new(&project_name), Box::new(&user), Box::new(&path), Box::new(&todo));
+                            if let Err(e) = add_todo(Box::new(project_name), Box::new(user), Box::new(path), Box::new(todo)) {
+                                eprintln!("Could not add todo: {}", e);
+                                process::exit(1);
+                            }
+
+                        } else {
+                            if let Err(e) = add_todo(Box::new(project_name), Box::new(user), Box::new(&String::new()), Box::new(todo)) {
+
+                            eprintln!("Could not add todo: {}", e);
+                            process::exit(1);
+                            }
+                        }
+                    } else if let Some(path) = &path  {
+                        if let Err(e) = add_todo(Box::new(project_name), Box::new(&String::new()), Box::new(path), Box::new(todo)) {
+                            eprintln!("Could not add todo: {}", e);
+                            process::exit(1);
+
+                        }
+                    } else {
+                        if let Err(e) = add_todo(Box::new(project_name), Box::new(&String::new()), Box::new(&String::new()), Box::new(todo)) {
+                            eprintln!("Could not add todo: {}", e);
+                            process::exit(1);
                         }
                     }
+                } else {
+                    eprintln!("Please include a \"todo\" you would like adding to the project");
+                    process::exit(1);
                 }
+            } else {
+                eprintln!("Please specify a project to add a \"todo\" to");
+                process::exit(1);
             }
         }
         None => {
-            //print_sorter(Box::new());    
-
+            eprintln!("Please specify a command");
+            process::exit(1);
         }
     }
 }
